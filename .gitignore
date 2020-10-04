@@ -1,2 +1,4 @@
 .vscode/
 env/
+demo.py
+output.txt

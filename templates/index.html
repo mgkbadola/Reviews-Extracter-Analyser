@@ -13,7 +13,11 @@
     <form method="POST" action="/review">
         <div class="input-group">
             <input class="form-control" type="text" name="query">
-            <div class="input-group-append"><button class="btn btn-primary" type="button">Go!</button></div>
+            <select class="form-control" name="shop">
+                <option value="flipkart">Flipkart</option>
+                <option value="amazon">Amazon</option>
+            </select>
+            <div class="input-group-append"><button class="btn btn-primary" type="submit">Go!</button></div>
         </div>
     </form>
 </body>
