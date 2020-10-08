@@ -19,13 +19,9 @@ class DataCollection:
 		"Comment": list()}
 
 	def get_final_data(self, commentbox=None, prodName=None, prod_price=None, vendor=None):
-		'''
-		this will append data gathered from comment box into data dictionary
-		'''
+		
 		self.data["Product"].append(prodName)
-		print(prodName)
 		self.data["Price (INR)"].append(prod_price)
-		print(prod_price)
 		if vendor == 'flipkart':
 			try:
 				self.data["Name"].append(commentbox.div.div.\
@@ -56,18 +52,18 @@ class DataCollection:
 				self.data["Name"].append('No Name')
 
 			try:
-				self.data["Rating"].append(commentbox.div.next_sibling.a.text)
+				self.data["Rating"].append(commentbox.div.next_sibling.a.text.replace(' out of 5 stars',''))
 			except:
 				self.data["Rating"].append('No Rating')
 
 			try:
-				self.data["Comment Heading"].append(commentbox.div.next_sibling.a.next_sibling.next_sibling.text)
+				self.data["Comment Heading"].append(commentbox.div.next_sibling.a.next_sibling.next_sibling.span.text)
 			except:
 				self.data["Comment Heading"].append('No Comment Heading')
 
 			try:
-				comtag = commentbox.div.next_sibling.next_sibling.next_sibling.next_sibling.span.div.div
-				self.data["Comment"].append(comtag.text)
+				comtag = commentbox.div.next_sibling.next_sibling.next_sibling.next_sibling.span.div.div.span
+				self.data["Comment"].append(comtag.text.replace('\n',''))
 			except:
 				self.data["Comment"].append('')
 
@@ -94,7 +90,11 @@ class DataCollection:
 		return temp
 
 	def get_prod_HTML(self, productLink=None):
-		prod_page = requests.get(productLink)
+		headers = {"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
+		 "Accept-Encoding":"gzip, deflate",
+		 "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close",
+		  "Upgrade-Insecure-Requests":"1"}
+		prod_page = requests.get(productLink,headers=headers)
 		return soup(prod_page.text, "html.parser")
 
 
@@ -106,7 +106,6 @@ class DataCollection:
 def homePage():
 	return render_template("index.html")
 
-# route to display the review page
 @app.route('/review', methods=("POST", "GET"))
 @cross_origin()
 def index():
@@ -117,6 +116,7 @@ def index():
 				base_URL = 'https://www.flipkart.com'
 			else:
 				base_URL = 'https://www.amazon.in'
+			print(base_URL)
 			
 			search_string = request.form['query']
 			
@@ -132,12 +132,14 @@ def index():
 			else:
 				bigBoxes = query_HTML.find_all("a", {"class": "a-link-normal s-no-outline", 
 													'href': re.compile(r'\/.+\/dp\/.+?dchild=1')})
-
+			
 			product_name_Links = get_data.get_product_name_links(base_URL, bigBoxes)
-
 			for prodName, productLink in product_name_Links[:4]:
 				for prod_HTML in get_data.get_prod_HTML(productLink):
+					file1 = open("output.txt","w")
+					file1.write(str(prod_HTML)+'\n\n')
 					try:
+						prod_price = ''
 						if vendor == 'flipkart':
 							comment_boxes = prod_HTML.find_all('div', {'class': '_3nrCtb'})
 							prod_price = prod_HTML.find_all('div', {"class": "_1vC4OE _3qQ9m1"})[0].text
@@ -148,6 +150,7 @@ def index():
 							container = soup(str(container),'html.parser')
 							prod_price = container.find_all('span', {"id": "priceblock_ourprice"})[0].text
 
+						#print(prod_price)
 						prod_price = float((prod_price.replace("₹", "")).replace(",", "").replace(" ",""))
 						for commentbox in comment_boxes:
 							get_data.get_final_data(commentbox, prodName, prod_price, vendor)
@@ -156,6 +159,8 @@ def index():
 						pass
 
 			df = pd.DataFrame(get_data.get_data_dict())
+			
+			file1.close()
 
 			return render_template('review.html', 
 			tables=[df.to_html(classes='data')],
@@ -164,11 +169,9 @@ def index():
 			)
 		except Exception as e:
 			print(e)
-			# return 404 page if error occurs 
 			return render_template("404.html")
 
 	else:
-		# return index page if home is pressed or for the first run
 		return render_template("index.html")
 
 if __name__ == '__main__':
