@@ -7,12 +7,7 @@
     font-size: large;
       
     text-align: center;
-    background-image: url("/static/backgrounds/bg-main.jpeg");
     padding-top: 4%;
-    background-attachment: fixed;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
   }
   
   /* 1st index page */
@@ -47,7 +42,7 @@
   
   /* 2nd review page */
   a, h1, h3 { 
-    color: white; 
+    color: black; 
   }
   h1, h3 { margin: 0; 
   }
@@ -71,10 +66,9 @@
   }
   
   
-  tr:nth-child(odd)		{ background-color:#393e46; }
-  tr:nth-child(even)	{ background-color:#222831; }
+  tr:nth-child(odd)		{ background-color:rgba(0, 0, 0, 0.05); }
   
-  tr:hover            { background-color: #29a19c; color: black;}
+  tr:hover            { background-color: rgb(69, 69, 69); color: white;}
   
   
   /* virat's CSS */

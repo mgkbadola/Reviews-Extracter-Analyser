@@ -52,7 +52,7 @@ class DataCollection:
 				self.data["Name"].append('No Name')
 
 			try:
-				self.data["Rating"].append(commentbox.div.next_sibling.a.text.replace(' out of 5 stars',''))
+				self.data["Rating"].append(commentbox.div.next_sibling.a.text.replace('.0 out of 5 stars',''))
 			except:
 				self.data["Rating"].append('No Rating')
 
@@ -73,7 +73,7 @@ class DataCollection:
 			search_url = f"{base_URL}/search?q={search_string}"
 		else:
 			search_url = f"{base_URL}/s?k={search_string}"
-		print(search_url)
+
 		with urllib.request.urlopen(search_url) as url:
 			page = url.read()
 		return soup(page, "html.parser")
@@ -84,6 +84,7 @@ class DataCollection:
 			try:
 				temp.append((box.img['alt'],
 					base_URL + box["href"]))
+				#print(f"{box.img['alt']} : {base_URL + box['href']}")
 			except:
 				pass
 			
@@ -116,7 +117,6 @@ def index():
 				base_URL = 'https://www.flipkart.com'
 			else:
 				base_URL = 'https://www.amazon.in'
-			print(base_URL)
 			
 			search_string = request.form['query']
 			
@@ -131,13 +131,12 @@ def index():
 				bigBoxes = query_HTML.find_all("a", {"href":re.compile(r"\/.+\/p\/.+qH=.+")})
 			else:
 				bigBoxes = query_HTML.find_all("a", {"class": "a-link-normal s-no-outline", 
-													'href': re.compile(r'\/.+\/dp\/.+?dchild=1')})
+													'href': re.compile(r'\/.+\/dp\/.+?dchild=1.*')})
 			
 			product_name_Links = get_data.get_product_name_links(base_URL, bigBoxes)
 			for prodName, productLink in product_name_Links[:4]:
+				print(productLink)
 				for prod_HTML in get_data.get_prod_HTML(productLink):
-					file1 = open("output.txt","w")
-					file1.write(str(prod_HTML)+'\n\n')
 					try:
 						prod_price = ''
 						if vendor == 'flipkart':
@@ -146,9 +145,12 @@ def index():
 							
 						else:
 							comment_boxes = prod_HTML.find_all('div', {'id':re.compile(r'customer_review-.+')})
-							container = prod_HTML.find_all('td', {"class": "a-span12"})
-							container = soup(str(container),'html.parser')
-							prod_price = container.find_all('span', {"id": "priceblock_ourprice"})[0].text
+							try:
+								container = prod_HTML.find_all('td', {"class": "a-span12"})
+								container = soup(str(container),'html.parser')
+								prod_price = container.find_all('span', {"id": "priceblock_ourprice"})[0].text
+							except:
+								prod_price = prod_HTML.find_all('span', {"class": "a-size-base a-color-price"})[0].text
 
 						#print(prod_price)
 						prod_price = float((prod_price.replace("₹", "")).replace(",", "").replace(" ",""))
@@ -160,8 +162,6 @@ def index():
 
 			df = pd.DataFrame(get_data.get_data_dict())
 			
-			file1.close()
-
 			return render_template('review.html', 
 			tables=[df.to_html(classes='data')],
 			titles=df.columns.values,
