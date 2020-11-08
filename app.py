@@ -13,7 +13,7 @@ class DataCollection:
 	def __init__(self):
 		self.data = {"Product": list(), 
 		"Name": list(),
-		"Price (INR)": list(), 
+		"Price": list(), 
 		"Rating": list(), 
 		"Comment Heading": list(), 
 		"Comment": list()}
@@ -21,7 +21,7 @@ class DataCollection:
 	def get_final_data(self, commentbox=None, prodName=None, prod_price=None, vendor=None):
 		
 		self.data["Product"].append(prodName)
-		self.data["Price (INR)"].append(prod_price)
+		self.data["Price"].append(prod_price)
 		if vendor == 'flipkart':
 			try:
 				self.data["Name"].append(commentbox.div.div.\
@@ -45,6 +45,27 @@ class DataCollection:
 			except:
 				self.data["Comment"].append('')	
 		
+		elif vendor == 'walmart':
+			try:
+				self.data['Name'].append(commentbox.find('span',{'class':'review-footer-userNickname'}).text)
+			except:
+				self.data["Name"].append('No Name')
+
+			try:
+				self.data["Rating"].append(commentbox.find('span',{'class':'average-rating'}).text.replace('(','').replace(')',''))
+			except:
+				self.data["Rating"].append('No Rating')
+
+			try:
+				self.data["Comment Heading"].append(commentbox.find('h3',{'class':'review-title font-bold'}).text)
+			except:
+				self.data["Comment Heading"].append('No Comment Heading')	
+
+			try:
+				self.data["Comment"].append(commentbox.find('div',{'class':'review-text'}).text)
+			except:
+				self.data["Comment"].append('')			
+
 		else:
 			try:
 				self.data["Name"].append(commentbox.div.a.div.next_sibling.text)
@@ -71,22 +92,35 @@ class DataCollection:
 	def get_main_HTML(self, base_URL=None, search_string=None, vendor=None):
 		if vendor == 'flipkart':
 			search_url = f"{base_URL}/search?q={search_string}"
+		elif vendor == 'walmart':
+			search_url = f"{base_URL}/search/?query={search_string}"
 		else:
 			search_url = f"{base_URL}/s?k={search_string}"
 
-		with urllib.request.urlopen(search_url) as url:
-			page = url.read()
-		return soup(page, "html.parser")
+		if vendor == 'walmart':
+			headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"}
+			with requests.get(search_url, headers=headers) as page:
+				return soup(page.content,"html.parser") 
+		else:
+			with urllib.request.urlopen(search_url) as url:
+				page = url.read()
+			return soup(page, "html.parser")
 
 	def get_product_name_links(self, base_URL=None, bigBoxes=None):
 		temp = []
 		for box in bigBoxes:
-			try:
-				temp.append((box.img['alt'],
-					base_URL + box["href"]))
-				#print(f"{box.img['alt']} : {base_URL + box['href']}")
-			except:
-				pass
+			if base_URL == 'https://www.walmart.com':
+				try:
+					temp.append((box.img['alt'],
+								 base_URL + box.a['href']))
+				except:
+					pass
+			else:
+				try:
+					temp.append((box.img['alt'],
+								 base_URL + box["href"]))
+				except:
+					pass
 			
 		return temp
 
@@ -96,7 +130,7 @@ class DataCollection:
 		 "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT":"1","Connection":"close",
 		  "Upgrade-Insecure-Requests":"1"}
 		prod_page = requests.get(productLink,headers=headers)
-		return soup(prod_page.text, "html.parser")
+		return soup(prod_page.content, "html.parser")
 
 
 	def get_data_dict(self):
@@ -115,13 +149,14 @@ def index():
 			vendor = request.form['shop']
 			if vendor == 'flipkart':
 				base_URL = 'https://www.flipkart.com'
+			elif vendor == 'walmart':
+				base_URL = 'https://www.walmart.com'
 			else:
 				base_URL = 'https://www.amazon.in'
 			
 			search_string = request.form['query']
 			
 			search_string = search_string.replace(" ", "+")
-			print('processing...')
 
 			get_data = DataCollection()
 
@@ -129,20 +164,24 @@ def index():
 
 			if vendor=='flipkart':
 				bigBoxes = query_HTML.find_all("a", {"href":re.compile(r"\/.+\/p\/.+qH=.+")})
+			elif vendor == 'walmart':
+				bigBoxes = query_HTML.find_all('div',{'class':'search-result-gridview-item clearfix arrange-fill'}) 
 			else:
 				bigBoxes = query_HTML.find_all("a", {"class": "a-link-normal s-no-outline", 
 													'href': re.compile(r'\/.+\/dp\/.+?dchild=1.*')})
 			
 			product_name_Links = get_data.get_product_name_links(base_URL, bigBoxes)
 			for prodName, productLink in product_name_Links[:4]:
-				print(productLink)
 				for prod_HTML in get_data.get_prod_HTML(productLink):
 					try:
 						prod_price = ''
 						if vendor == 'flipkart':
 							comment_boxes = prod_HTML.find_all('div', {'class': '_3nrCtb'})
 							prod_price = prod_HTML.find_all('div', {"class": "_1vC4OE _3qQ9m1"})[0].text
-							
+
+						elif vendor == 'walmart':
+							comment_boxes = prod_HTML.find_all('div',{'class': 'Grid-col customer-review-body'})
+							prod_price = prod_HTML.find('span',{'class':'price-group'}).text
 						else:
 							comment_boxes = prod_HTML.find_all('div', {'id':re.compile(r'customer_review-.+')})
 							try:
@@ -151,9 +190,11 @@ def index():
 								prod_price = container.find_all('span', {"id": "priceblock_ourprice"})[0].text
 							except:
 								prod_price = prod_HTML.find_all('span', {"class": "a-size-base a-color-price"})[0].text
-
-						#print(prod_price)
-						prod_price = float((prod_price.replace("₹", "")).replace(",", "").replace(" ",""))
+						if vendor == 'walmart':
+							prod_price = float((prod_price.replace("$", "")).replace(",", "").replace(" ",""))
+						else:
+							prod_price = float((prod_price.replace("₹", "")).replace(",", "").replace(" ",""))
+						print(prod_price)
 						for commentbox in comment_boxes:
 							get_data.get_final_data(commentbox, prodName, prod_price, vendor)
 							
