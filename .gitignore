@@ -1,4 +1,2 @@
-.vscode/
-env/
+.idea/
 demo.py
-output.txt
