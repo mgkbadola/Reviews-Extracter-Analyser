@@ -1,14 +1,26 @@
 from bs4 import BeautifulSoup as soup
 import urllib
 import requests
+import pandas as pd
 from pandas import DataFrame
 import re
-
+import os
 from flask import Flask, render_template,  session, redirect, request, Response
 from flask_cors import CORS, cross_origin
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib
+
+IMG_FOLDER = os.path.join('static', 'images')
+CSV_FOLDER = os.path.join('static', 'CSVs')
 
 app = Flask(__name__)
 df: DataFrame
+
+
+app.config['IMG_FOLDER'] = IMG_FOLDER
+app.config['CSV_FOLDER'] = CSV_FOLDER
+
 
 class DataCollection:
 	def __init__(self):
@@ -138,6 +150,64 @@ class DataCollection:
 	def get_data_dict(self):
 		return self.data
 
+	def save_as_dataframe(self, dataframe, fileName=None):
+		'''
+		it saves the dictionary dataframe as csv by given filename inside
+		the CSVs folder and returns the final path of saved csv
+		'''
+		# save the CSV file to CSVs folder
+		csv_path = os.path.join(app.config['CSV_FOLDER'], fileName)
+		fileExtension = '.csv'
+		final_path = f"{csv_path}{fileExtension}"
+		# clean previous files -
+		CleanCache(directory=app.config['CSV_FOLDER'])
+		# save new csv to the csv folder
+		dataframe.to_csv(final_path, index=None)
+		print("File saved successfully!!")
+		return final_path
+
+
+	def save_wordcloud_image(self, dataframe=None, img_filename=None):
+		'''
+		it generates and saves the wordcloud image into wc_folder
+		'''
+		# extract all the comments
+		txt = dataframe["Comment"].values
+		# generate the wordcloud
+		wc = WordCloud(width=800, height=400, background_color='black', stopwords=STOPWORDS).generate(str(txt))
+		matplotlib.use('agg')
+
+		plt.figure(figsize=(20,10), facecolor='k', edgecolor='k')
+		plt.imshow(wc, interpolation='bicubic') 
+		plt.axis('off')
+		plt.tight_layout()
+		# create path to save wc image
+		image_path = os.path.join(app.config['IMG_FOLDER'], img_filename + '.png')
+		# Clean previous image from the given path
+		CleanCache(directory=app.config['IMG_FOLDER'])
+		# save the image file to the image path
+		plt.savefig(image_path)
+		plt.close()
+		print("saved wc")
+
+
+class CleanCache:
+	'''
+	this class is responsible to clear any residual csv and image files
+	present due to the past searches made.
+	'''
+	def __init__(self, directory=None):
+		self.clean_path = directory
+		# only proceed if directory is not empty
+		if os.listdir(self.clean_path) != list():
+			# iterate over the files and remove each file
+			files = os.listdir(self.clean_path)
+			for fileName in files:
+				print(fileName)
+				os.remove(os.path.join(self.clean_path,fileName))
+		print("cleaned!")
+
+	
 @app.route('/',methods=['GET'])
 @cross_origin()
 def homePage():
@@ -202,14 +272,25 @@ def index():
 
 					except:
 						pass
-
+			# save the data as gathered in dataframe
 			global df
+			df = pd.DataFrame(get_data.get_data_dict())
+
+			# save dataframe as a csv which will be availble to download
+			download_path = get_data.save_as_dataframe(df, fileName=search_string.replace("+", "_"))
+
+			# generate and save the wordcloud image
+			get_data.save_wordcloud_image(df, 
+			img_filename=search_string.replace("+", "_"))
+
+		
 			df = DataFrame(get_data.get_data_dict())
 
 			return render_template('review.html',
 			tables=[df.to_html(classes='data')],
 			titles=df.columns.values,
 			search_string = search_string,
+			download_csv= '/Users/mohit/TOC-Innovative-Work-Project/static/CSVs'
 			)
 		except Exception as e:
 			print(e)
@@ -222,10 +303,18 @@ def index():
 def getCSV():
 	global df
 	return Response(
-		df.to_csv(),
+		df.to_csv(index = False),
 		mimetype="text/csv",
 		headers={"Content-disposition":
 					 f"attachment;filename=review.csv"})
+
+@app.route('/show')  
+@cross_origin()
+def show_wordcloud():
+	img_file = os.listdir(app.config['IMG_FOLDER'])[0]
+	full_filename = os.path.join(app.config['IMG_FOLDER'], img_file)
+	return render_template("show_wc.html", user_image = full_filename)
+
 
 if __name__ == '__main__':
 	app.run(debug=True)
