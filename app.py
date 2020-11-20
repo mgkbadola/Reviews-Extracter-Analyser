@@ -1,5 +1,5 @@
-from bs4 import BeautifulSoup as soup
-import urllib
+from bs4 import BeautifulSoup as Soup
+import urllib.request
 import requests
 import pandas as pd
 from pandas import DataFrame
@@ -16,7 +16,6 @@ CSV_FOLDER = os.path.join('static', 'CSVs')
 
 app = Flask(__name__)
 df: DataFrame
-
 
 app.config['IMG_FOLDER'] = IMG_FOLDER
 app.config['CSV_FOLDER'] = CSV_FOLDER
@@ -207,15 +206,17 @@ class CleanCache:
 				os.remove(os.path.join(self.clean_path,fileName))
 		print("cleaned!")
 
-	
-@app.route('/',methods=['GET'])
+    
+@app.route('/', methods=['GET'])
 @cross_origin()
-def homePage():
-	return render_template("index.html")
+def homepage():
+    return render_template("index.html")
+
 
 @app.route('/review', methods=("POST", "GET"))
 @cross_origin()
 def index():
+
 	if request.method == 'POST':
 		try:
 			vendor = request.form['shop']
@@ -307,14 +308,13 @@ def getCSV():
 		mimetype="text/csv",
 		headers={"Content-disposition":
 					 f"attachment;filename=review.csv"})
-
+  
 @app.route('/show')  
 @cross_origin()
 def show_wordcloud():
 	img_file = os.listdir(app.config['IMG_FOLDER'])[0]
 	full_filename = os.path.join(app.config['IMG_FOLDER'], img_file)
 	return render_template("show_wc.html", user_image = full_filename)
-
 
 if __name__ == '__main__':
 	app.run(debug=True)
