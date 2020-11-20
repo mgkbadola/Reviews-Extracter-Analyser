@@ -126,7 +126,7 @@ class DataCollection:
 			if base_URL == 'https://www.walmart.com':
 				try:
 					temp.append((box.img['alt'],
-								 base_URL + box.a['href']))
+								 "https://www.walmart.com/reviews/product" + box.a['href']))
 				except:
 					pass
 			else:
