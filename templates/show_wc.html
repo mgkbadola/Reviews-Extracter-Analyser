@@ -1,36 +1,30 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html>
 
-{% block title %}
-<title>Wordcloud</title>
-{% endblock title %}
-
-{% block searchbar %}
-<form action="/review" method="POST" class="form-inline my-2 my-lg-0">
-        <input class="form-control mr-sm-2" name="content" type="search" placeholder="Search" aria-label="Search">
-        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-</form>
-{% endblock searchbar %}
-
-{% block body %}
-<!-- <div class="container" style="padding-top: 3%;">
-<h1>show word cloud</h1>
-<img src="https://images.pexels.com/photos/3617457/pexels-photo-3617457.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260" alt="">
-</div> -->
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title>Wordcloud</title>
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css')}}" crossorigin="anonymous">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<a href="javascript:history.go(-1)" style="width: 33%">Return to review</a>
+<a href="javascript:history.go(-2)" style="width: 33%">Return to search</a>
 <div class="text-center word-cloud">
 <figure class="figure img-fluid">
-    <img src="{{ user_image }}" class="figure-img img-fluid rounded" alt="...">
+    <img src="{{ url_for('static', filename = user_image) }}" class="figure-img img-fluid rounded" alt="...">
     <figcaption class="figure-caption">Wordcloud</figcaption>
   </figure>
 </div>
+</body>
 <style>
-body{
-    
-  margin-top: 4%;
-  background-attachment: fixed;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
+    body{
+        margin-top: 4%;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
 </style>
-
-{% endblock body %}
+</html>

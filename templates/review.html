@@ -8,16 +8,17 @@
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css')}}" crossorigin="anonymous">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-
 <body>
-    <a href="/getCSV">Export Data To CSV.</a>
+    <div>
+    <a href="/show" style="width: 33%">Generate WordCloud</a>
+    <a href="javascript:history.go(-1)" style="width: 33%">Return to search</a>
+    <a href="/getCSV" style="width: 33%">Export Data To CSV.</a>
+    </div>
     <div class="container">
         {% for table in tables %}
         <h3>{{ table | safe }}</h3>
         {% endfor %}
     </div>
-    <a href="/show">Generate WordCloud</a>
-
 </body>
 
 </html>
