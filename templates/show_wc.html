@@ -1,30 +1,31 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Wordcloud</title>
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css')}}" crossorigin="anonymous">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}"
+          crossorigin="anonymous">
     <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
-<a href="javascript:history.go(-1)" style="width: 33%">Return to review</a>
-<a href="javascript:history.go(-2)" style="width: 33%">Return to search</a>
+<a href="javascript:history.go(-1)">
+    <button class="btn btn-primary">Return to Reviews</button>
+</a>
+<a href="javascript:history.go(-2)">
+    <button class="btn btn-primary">Return to Search</button>
+</a>
 <div class="text-center word-cloud">
-<figure class="figure img-fluid">
-    <img src="{{ url_for('static', filename = user_image) }}" class="figure-img img-fluid rounded" alt="...">
-    <figcaption class="figure-caption">Wordcloud</figcaption>
-  </figure>
+    <figure class="figure img-fluid" style="width: 80%">
+        <img src="{{ url_for('static', filename = user_image) }}" class="figure-img img-fluid rounded" alt="...">
+        <figcaption class="figure-caption">Wordcloud</figcaption>
+    </figure>
 </div>
 </body>
 <style>
-    body{
-        margin-top: 4%;
-        background-attachment: fixed;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: cover;
+    body {
+        background-color: #1d2124;
     }
 </style>
 </html>

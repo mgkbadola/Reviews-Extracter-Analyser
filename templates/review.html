@@ -5,20 +5,35 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Reviews</title>
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css')}}" crossorigin="anonymous">
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}"
+          crossorigin="anonymous">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}"
+          crossorigin="anonymous">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body>
-    <div>
-    <a href="/show" style="width: 33%">Generate WordCloud</a>
-    <a href="javascript:history.go(-1)" style="width: 33%">Return to search</a>
-    <a href="/getCSV" style="width: 33%">Export Data To CSV.</a>
-    </div>
-    <div class="container">
-        {% for table in tables %}
+<div class="container">
+    <a href="/show">
+        <button class="btn btn-primary">Generate Word Cloud</button>
+    </a>
+    <a href="javascript:history.go(-1)">
+        <button class="btn btn-primary">Return to Search</button>
+    </a>
+    <a href="/getCSV">
+        <button class="btn btn-primary">Export Data To CSV</button>
+    </a>
+</div>
+<br/>
+<br/>
+<div class="container">
+    {% for table in tables %}
         <h3>{{ table | safe }}</h3>
         {% endfor %}
-    </div>
+</div>
 </body>
-
+<style>
+    body {
+        background-color: #1d2124;
+    }
+</style>
 </html>

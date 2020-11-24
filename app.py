@@ -1,21 +1,22 @@
-from bs4 import BeautifulSoup as Soup
-import urllib.request
-import requests
-import pandas as pd
-from pandas import DataFrame
-import re
 import os
+import re
+import urllib.request
+
+import matplotlib
+import matplotlib.pyplot as plt
+import requests
+from bs4 import BeautifulSoup as Soup
 from flask import Flask, render_template, request, Response
 from flask_cors import cross_origin
-import matplotlib.pyplot as plt
+from flask_ngrok import run_with_ngrok
+from pandas import DataFrame
 from wordcloud import WordCloud, STOPWORDS
-import matplotlib
 
 wd = 'D:/IDEAProjects/Py/TOC-Innovative-Work-Project/static/'
 IMG_FOLDER = wd + 'images/'
 CSV_FOLDER = wd + 'CSVs/'
-print(f"{IMG_FOLDER} {CSV_FOLDER}")
 app = Flask(__name__)
+run_with_ngrok(app=app)
 df: DataFrame
 
 app.config['IMG_FOLDER'] = IMG_FOLDER
@@ -31,88 +32,18 @@ class DataCollection:
                      "Comment Heading": list(),
                      "Comment": list()}
 
-    def get_final_data(self, commentbox=None, prodName=None, prod_price=None, vendor=None):
-
-        self.data["Product"].append(prodName)
-        self.data["Price"].append(prod_price)
+    def get_main_html(self, base_url=None, search_string=None, vendor=None):
         if vendor == 'flipkart':
-            try:
-                self.data["Name"].append(commentbox.div.div. \
-                                         find_all('p', {'class': '_3LYOAd _3sxSiS'})[0].text)
-            except:
-                self.data["Name"].append('No Name')
-
-            try:
-                self.data["Rating"].append(commentbox.div.div.div.div.text)
-            except:
-                self.data["Rating"].append('No Rating')
-
-            try:
-                self.data["Comment Heading"].append(commentbox.div.div.div.p.text)
-            except:
-                self.data["Comment Heading"].append('No Comment Heading')
-
-            try:
-                comtag = commentbox.div.div.find_all('div', {'class': ''})
-                self.data["Comment"].append(comtag[0].div.text)
-            except:
-                self.data["Comment"].append('')
-
+            search_url = f"{base_url}/search?q={search_string}"
         elif vendor == 'walmart':
-            try:
-                self.data['Name'].append(commentbox.find('span', {'class': 'review-footer-userNickname'}).text)
-            except:
-                self.data["Name"].append('No Name')
-
-            try:
-                self.data["Rating"].append(
-                    commentbox.find('span', {'class': 'average-rating'}).text.replace('(', '').replace(')', ''))
-            except:
-                self.data["Rating"].append('No Rating')
-
-            try:
-                self.data["Comment Heading"].append(commentbox.find('h3', {'class': 'review-title font-bold'}).text)
-            except:
-                self.data["Comment Heading"].append('No Comment Heading')
-
-            try:
-                self.data["Comment"].append(commentbox.find('div', {'class': 'review-text'}).text)
-            except:
-                self.data["Comment"].append('')
-
+            search_url = f"{base_url}/search/?query={search_string}"
         else:
-            try:
-                self.data["Name"].append(commentbox.div.a.div.next_sibling.text)
-            except:
-                self.data["Name"].append('No Name')
-
-            try:
-                self.data["Rating"].append(commentbox.div.next_sibling.a.text.replace('.0 out of 5 stars', ''))
-            except:
-                self.data["Rating"].append('No Rating')
-
-            try:
-                self.data["Comment Heading"].append(commentbox.div.next_sibling.a.next_sibling.next_sibling.span.text)
-            except:
-                self.data["Comment Heading"].append('No Comment Heading')
-
-            try:
-                comtag = commentbox.div.next_sibling.next_sibling.next_sibling.next_sibling.span.div.div.span
-                self.data["Comment"].append(comtag.text.replace('\n', ''))
-            except:
-                self.data["Comment"].append('')
-
-    def get_main_HTML(self, base_URL=None, search_string=None, vendor=None):
-        if vendor == 'flipkart':
-            search_url = f"{base_URL}/search?q={search_string}"
-        elif vendor == 'walmart':
-            search_url = f"{base_URL}/search/?query={search_string}"
-        else:
-            search_url = f"{base_URL}/s?k={search_string}"
+            search_url = f"{base_url}/s?k={search_string}"
 
         if vendor == 'walmart':
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"}
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                              "Chrome/86.0.4240.183 Safari/537.36"}
             with requests.get(search_url, headers=headers) as page:
                 return Soup(page.content, "html.parser")
         else:
@@ -121,43 +52,123 @@ class DataCollection:
             # print(Soup(page, "html.parser").prettify())
             return Soup(page, "html.parser")
 
-    def get_product_name_links(self, base_URL=None, bigBoxes=None):
-        temp = []
-        for box in bigBoxes:
-            if base_URL == 'https://www.walmart.com':
-                try:
-                    temp.append((box.img['alt'],
-                                 "https://www.walmart.com/reviews/product" + box.a['href']))
-                except:
-                    pass
-            else:
-                try:
-                    temp.append((box.img['alt'],
-                                 base_URL + box["href"]))
-                except:
-                    pass
-
-        return temp
-
-    def get_prod_HTML(self, vendor=None, productLink=None):
+    def get_prod_html(self, product_link=None):
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101 Firefox/66.0",
                    "Accept-Encoding": "gzip, deflate",
                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "DNT": "1",
                    "Connection": "close",
                    "Upgrade-Insecure-Requests": "1"}
-        prod_page = requests.get(productLink, headers=headers)
+        prod_page = requests.get(product_link, headers=headers)
         return Soup(prod_page.content, "html.parser")
+
+    def get_product_name_links(self, base_url=None, big_boxes=None):
+        temp = []
+        for box in big_boxes:
+            if base_url == 'https://www.walmart.com':
+                try:
+                    temp.append((box.img['alt'],
+                                 "https://www.walmart.com/reviews/product" + box.a['href'] + '?sort=rating-asc'))
+                except:
+                    pass
+            elif base_url == 'https://www.flipkart.com':
+                link = re.findall(re.compile(r'\/.+\/p\/.+\?pid=.{16}&lid=.{25}'),
+                                  box['href'])[0]
+                link = link.replace('/p/', '/product-reviews/')
+                link += '&aid=overall&certifiedBuyer=true&sortOrder=NEGATIVE_FIRST'
+                temp.append((box.img['alt'],
+                             base_url + link))
+                # print(base_url + link)
+            else:
+                try:
+                    temp.append((box.img['alt'],
+                                 base_url + box["href"]))
+                except:
+                    pass
+
+        return temp
+
+    def get_final_data(self, comment_box=None, prod_name=None, prod_price=None, vendor=None):
+
+        self.data["Product"].append(prod_name)
+        self.data["Price"].append(prod_price)
+        if vendor == 'flipkart':
+            try:
+                self.data["Name"].append(comment_box.find_all('p', {'class': '_2sc7ZR _2V5EHH'})[0].text)
+            except:
+                self.data["Name"].append('No Name')
+
+            try:
+                try:
+                    self.data["Rating"].append(comment_box.find_all('div', {'class': '_3LWZlK _1BLPMq'})[0].text)
+                except:
+                    self.data["Rating"].append(
+                        comment_box.find_all('div', {'class': '_3LWZlK _1rdVr6 _1BLPMq'})[0].text)
+            except:
+                self.data["Rating"].append('No Rating')
+
+            try:
+                self.data["Comment Heading"].append(comment_box.find_all('p', {'class': '_2-N8zT'})[0].text)
+            except:
+                self.data["Comment Heading"].append('No Comment Heading')
+
+            try:
+                self.data["Comment"].append(comment_box.find_all('div', {'class': 't-ZTKy'})[0].text
+                                            .replace('READ MORE', ''))
+            except:
+                self.data["Comment"].append('')
+
+        elif vendor == 'walmart':
+            try:
+                self.data['Name'].append(comment_box.find('span', {'class': 'review-footer-userNickname'}).text)
+            except:
+                self.data["Name"].append('No Name')
+
+            try:
+                self.data["Rating"].append(
+                    comment_box.find('span', {'class': 'average-rating'}).text.replace('(', '').replace(')', ''))
+            except:
+                self.data["Rating"].append('No Rating')
+
+            try:
+                self.data["Comment Heading"].append(comment_box.find('h3', {'class': 'review-title font-bold'}).text)
+            except:
+                self.data["Comment Heading"].append('No Comment Heading')
+
+            try:
+                self.data["Comment"].append(comment_box.find('div', {'class': 'review-text'}).text)
+            except:
+                self.data["Comment"].append('')
+
+        else:
+            try:
+                self.data["Name"].append(comment_box.find_all('span', {'class': 'a-profile-name'})[0].text)
+            except:
+                self.data["Name"].append('No Name')
+
+            try:
+                self.data["Rating"].append(comment_box.find_all('span', {'class': 'a-icon-alt'})[0]
+                                           .text.replace('.0 out of 5 stars', ''))
+            except:
+                self.data["Rating"].append('No Rating')
+
+            try:
+                self.data["Comment Heading"].append(comment_box.find_all('a', {'data-hook': 'review-title'})[0].text
+                                                    .replace('\n', ''))
+            except:
+                self.data["Comment Heading"].append('No Comment Heading')
+
+            try:
+                self.data["Comment"].append(comment_box.find_all('span', {'data-hook': 'review-body'})[0].text
+                                            .replace('\n', ''))
+            except:
+                self.data["Comment"].append('')
 
     def get_data_dict(self):
         return self.data
 
-    def save_as_dataframe(self, dataframe, fileName=None):
-        '''
-        it saves the dictionary dataframe as csv by given filename inside
-        the CSVs folder and returns the final path of saved csv
-        '''
+    def save_as_dataframe(self, dataframe, file_name=None):
         # save the CSV file to CSVs folder
-        csv_path = app.config['CSV_FOLDER'] + fileName
+        csv_path = app.config['CSV_FOLDER'] + file_name
         fileExtension = '.csv'
         final_path = f"{csv_path}{fileExtension}"
         # clean previous files -
@@ -167,13 +178,10 @@ class DataCollection:
         print("File saved successfully!!")
         return final_path
 
-    def save_wordcloud_image(self, dataframe=None, img_filename=None):
-        '''
-        it generates and saves the wordcloud image into wc_folder
-        '''
+    def save_wordcloud_image(self, dataframe=None, img_file_name=None):
         # extract all the comments
         txt = dataframe["Comment"].values
-        # generate the wordcloud
+        # generate the word cloud
         wc = WordCloud(width=800, height=400, background_color='black', stopwords=STOPWORDS).generate(str(txt))
         matplotlib.use('agg')
 
@@ -182,7 +190,7 @@ class DataCollection:
         plt.axis('off')
         plt.tight_layout()
         # create path to save wc image
-        image_path = app.config['IMG_FOLDER'] + img_filename + '.png'
+        image_path = app.config['IMG_FOLDER'] + img_file_name + '.png'
         # Clean previous image from the given path
         CleanCache(directory=app.config['IMG_FOLDER'])
         # save the image file to the image path
@@ -192,20 +200,15 @@ class DataCollection:
 
 
 class CleanCache:
-    '''
-    this class is responsible to clear any residual csv and image files
-    present due to the past searches made.
-    '''
-
     def __init__(self, directory=None):
         self.clean_path = directory
         # only proceed if directory is not empty
         if os.listdir(self.clean_path) != list():
             # iterate over the files and remove each file
             files = os.listdir(self.clean_path)
-            for fileName in files:
-                print(fileName)
-                os.remove(self.clean_path + fileName)
+            for file_name in files:
+                print(file_name)
+                os.remove(self.clean_path + file_name)
         print("cleaned!")
 
 
@@ -222,11 +225,11 @@ def index():
         try:
             vendor = request.form['shop']
             if vendor == 'flipkart':
-                base_URL = 'https://www.flipkart.com'
+                base_url = 'https://www.flipkart.com'
             elif vendor == 'walmart':
-                base_URL = 'https://www.walmart.com'
+                base_url = 'https://www.walmart.com'
             else:
-                base_URL = 'https://www.amazon.in'
+                base_url = 'https://www.amazon.in'
 
             search_string = request.form['query']
 
@@ -234,63 +237,104 @@ def index():
 
             get_data = DataCollection()
 
-            query_HTML = get_data.get_main_HTML(base_URL, search_string, vendor)
+            query_html = get_data.get_main_html(base_url, search_string, vendor)
 
             if vendor == 'flipkart':
-                bigBoxes = query_HTML.find_all("a", {"href": re.compile(r"\/.+\/p\/.+qH=.+")})
+                big_boxes = query_html.find_all("a", {"href": re.compile(r"\/.+\/p\/.+qH=.+")})
             elif vendor == 'walmart':
-                bigBoxes = query_HTML.find_all('div', {'data-type': 'items'})
-                if len(bigBoxes) == 0:
-                    bigBoxes = query_HTML.find('div', {'data-tl-id': re.compile(r"ProductTileListView-\d{1,2}")})
+                big_boxes = query_html.find_all('div', {'data-type': 'items'})
+                if len(big_boxes) == 0:
+                    big_boxes = query_html.find('div', {'data-tl-id': re.compile(r"ProductTileListView-\d{1,2}")})
             else:
-                bigBoxes = query_HTML.find_all("a", {"class": "a-link-normal s-no-outline",
-                                                     'href': re.compile(r'\/.+\/dp\/.+?dchild=1.*')})
+                big_boxes = query_html.find_all("a", {"class": "a-link-normal s-no-outline",
+                                                      'href': re.compile(r'\/.+\/dp\/.+?dchild=1.*')})
 
-            product_name_Links = get_data.get_product_name_links(base_URL, bigBoxes)
-            for prodName, productLink in product_name_Links[:8]:
-                for prod_HTML in get_data.get_prod_HTML(vendor, productLink):
+            product_name_links = get_data.get_product_name_links(base_url, big_boxes)
+            for prod_name, product_link in product_name_links[:4]:
+                for prod_html in get_data.get_prod_html(product_link):
                     try:
                         prod_price = ''
                         if vendor == 'flipkart':
-                            comment_boxes = prod_HTML.find_all('div', {'class': '_16PBlm'})
-                            prod_price = prod_HTML.find_all('div', {"class": "_30jeq3 _16Jk6d"})[0].text
+                            comment_boxes = prod_html.find_all('div', {'class': '_27M-vq'})
+                            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101"
+                                                     " Firefox/66.0",
+                                       "Accept-Encoding": "gzip, deflate",
+                                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                       "DNT": "1",
+                                       "Connection": "close",
+                                       "Upgrade-Insecure-Requests": "1"}
+                            positive_link = product_link.replace('NEGATIVE', 'POSITIVE')
+                            prod_page = requests.get(positive_link, headers=headers)
+                            prod_positive = Soup(prod_page.content, "html.parser")
+                            comment_boxes += prod_positive.find_all('div', {'class': '_27M-vq'})
+                            prod_price = prod_positive.find_all('div', {"class": "_30jeq3"})[0].text
 
                         elif vendor == 'walmart':
-                            comment_boxes = prod_HTML.find_all('div', {'class': 'Grid-col customer-review-body'})
-                            prod_price = prod_HTML.find('span', {'class': 'price-group'}).text
+                            comment_boxes = prod_html.find_all('div', {'class': 'Grid-col customer-review-body'})
+                            positive_link = product_link.replace('asc', 'desc')
+                            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101"
+                                                     " Firefox/66.0",
+                                       "Accept-Encoding": "gzip, deflate",
+                                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                       "DNT": "1",
+                                       "Connection": "close",
+                                       "Upgrade-Insecure-Requests": "1"}
+                            prod_page = requests.get(positive_link, headers=headers)
+                            prod_positive = Soup(prod_page.content, "html.parser")
+                            comment_boxes += prod_positive.find_all('div', {'class': 'Grid-col customer-review-body'})
+                            prod_price = prod_html.find('span', {'class': 'price-group'}).text
                         else:
-                            comment_boxes = prod_HTML.find_all('div', {'id': re.compile(r'customer_review-.+')})
                             try:
-                                container = prod_HTML.find_all('td', {"class": "a-span12"})
+                                container = prod_html.find_all('td', {"class": "a-span12"})
                                 container = Soup(str(container), 'html.parser')
                                 prod_price = container.find_all('span', {"id": "priceblock_ourprice"})[0].text
                             except:
-                                prod_price = prod_HTML.find_all('span', {"class": "a-size-base a-color-price"})[0].text
+                                prod_price = prod_html.find_all('span', {"class": "a-size-base a-color-price"})[0].text
+                            # print(prod_price)
+                            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:66.0) Gecko/20100101"
+                                                     " Firefox/66.0",
+                                       "Accept-Encoding": "gzip, deflate",
+                                       "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                                       "DNT": "1",
+                                       "Connection": "close",
+                                       "Upgrade-Insecure-Requests": "1"}
+                            link = product_link
+                            link = re.findall(re.compile(r'\/.+\/.{10}'), link)[0]
+                            link = link.replace('dp', 'product-reviews')
+                            link = 'https:' + link + '/ref=cm_cr_arp_d_viewopt_sr?ie=UTF8' \
+                                                     '&reviewerType=avp_only_reviews&pageNumber=1&filterByStar=critical'
+                            # print(link)
+                            prod_page = requests.get(link, headers=headers)
+                            prod_negative = Soup(prod_page.content, 'html.parser')
+                            comment_boxes = prod_negative.find_all('div', {'id': re.compile(r'customer_review-.+')})
+                            link = link.replace('critical', 'positive')
+                            prod_page = requests.get(link, headers=headers)
+                            prod_positive = Soup(prod_page.content, 'html.parser')
+                            comment_boxes += prod_positive.find_all('div', {'id': re.compile(r'customer_review-.+')})
+                            # print(len(comment_boxes))
+
                         if vendor == 'walmart':
                             prod_price = float((prod_price.replace("$", "")).replace(",", "").replace(" ", ""))
                         else:
                             prod_price = float((prod_price.replace("₹", "")).replace(",", "").replace(" ", ""))
                         # print(prod_price)
-                        for commentbox in comment_boxes:
-                            get_data.get_final_data(commentbox, prodName, prod_price, vendor)
+                        for comment_box in comment_boxes:
+                            get_data.get_final_data(comment_box, prod_name, prod_price, vendor)
 
                     except:
                         pass
             # save the data as gathered in dataframe
             global df
-            df = pd.DataFrame(get_data.get_data_dict())
-
+            df = DataFrame(get_data.get_data_dict())
             # save dataframe as a csv which will be availble to download
-            download_path = get_data.save_as_dataframe(df, fileName=search_string.replace("+", "_"))
+            download_path = get_data.save_as_dataframe(df, file_name=search_string.replace("+", "_"))
 
             # generate and save the wordcloud image
             get_data.save_wordcloud_image(df,
-                                          img_filename=search_string.replace("+", "_"))
-
-            df = DataFrame(get_data.get_data_dict())
+                                          img_file_name=search_string.replace("+", "_"))
 
             return render_template('review.html',
-                                   tables=[df.to_html(classes='data')],
+                                   tables=[df.to_html(index=False, classes='data')],
                                    titles=df.columns.values,
                                    search_string=search_string,
                                    download_csv=app.config['CSV_FOLDER']
@@ -303,14 +347,14 @@ def index():
         return render_template("index.html")
 
 
-@app.route("/getCSV")
-def getCSV():
+@app.route("/get_csv")
+def get_csv():
     global df
     return Response(
         df.to_csv(index=False),
         mimetype="text/csv",
         headers={"Content-disposition":
-                     f"attachment;filename=review.csv"})
+                     f"attachment;file_name=review.csv"})
 
 
 @app.route('/show')
@@ -322,4 +366,4 @@ def show_wordcloud():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()

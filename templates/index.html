@@ -5,24 +5,41 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <title>Search</title>
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css')}}" crossorigin="anonymous">
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='bootstrap/css/bootstrap.min.css') }}"
+          crossorigin="anonymous">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/styles.css') }}"
+          crossorigin="anonymous">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 
 <body>
-    <div class="container">
-        <form method="POST" action="/review">
-            <div class="input-group">
-                <input class="form-control" type="text" name="query" autocomplete="off">
-                <select class="form-control" name="shop">
-                    <option value="flipkart">Flipkart</option>
-                    <option value="amazon">Amazon</option>
-                    <option value="walmart">Walmart(US)</option>
-                </select>
-                <div class="input-group-append"><button class="btn btn-primary" type="submit">Go!</button></div>
+<span style="color: #fff; text-transform: uppercase; font-size: 50px">Review Extractor and Analyser</span>
+<br/>
+<br/>
+<br/>
+<div class="container">
+    <form method="POST" action="/review">
+        <div class="input-group">
+            <input class="form-control" type="text" name="query" autocomplete="off">
+            <select class="form-control" name="shop">
+                <option value="flipkart">Flipkart</option>
+                <option value="amazon">Amazon</option>
+                <option value="walmart">Walmart(US)</option>
+            </select>
+            <div class="input-group-append">
+                <button class="btn btn-primary" type="submit">Go!</button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
 </body>
-
+<style>
+    body {
+        background-image: url("/static/background.png");
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+    }
+</style>
 </html>
